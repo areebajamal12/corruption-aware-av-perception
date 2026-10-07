@@ -19,7 +19,7 @@ echo "Test suite"
 
 echo "CLI smoke tests"
 for command in inspect-nuscenes evaluate-detection benchmark-corruptions \
-  benchmark-segmentation benchmark-tracking evaluate-reliability; do
+  benchmark-segmentation benchmark-tracking evaluate-reliability export-onnx; do
   "$bin_dir/$command" --help >/dev/null
   echo "validated: $command --help"
 done
