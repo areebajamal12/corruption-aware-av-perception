@@ -22,6 +22,13 @@ outputs/milestone56/
 outputs/milestone3/
 outputs/milestone4/
 outputs/milestone7/
+outputs/milestone9/
+*.engine
+*.plan
+*.nsys-rep
+*.ses
+*.onnx
+*.onnx.data
 
 # Downloaded model weights and exports
 *.pt

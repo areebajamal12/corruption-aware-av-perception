@@ -22,6 +22,11 @@ dev = [
   "pytest>=8,<9",
   "ruff>=0.7,<1",
 ]
+deployment = [
+  "onnx>=1.17,<2",
+  "onnxruntime>=1.20,<2",
+  "onnxscript>=0.2,<1",
+]
 
 [project.scripts]
 inspect-nuscenes = "av_perception.data.inspect_nuscenes:main"
@@ -30,6 +35,7 @@ benchmark-corruptions = "av_perception.corruption.benchmark:main"
 benchmark-segmentation = "av_perception.segmentation.benchmark:main"
 benchmark-tracking = "av_perception.tracking.benchmark:main"
 evaluate-reliability = "av_perception.reliability.experiment:main"
+export-onnx = "av_perception.deployment.export_onnx:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/av_perception"]

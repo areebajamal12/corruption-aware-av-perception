@@ -376,3 +376,27 @@ This workflow was executed—not merely authored—in a free local Ubuntu 24.04.
 Linux kernel 6.8.0, Python 3.11.17, 38 passing tests, successful Ruff validation, and all six CLI
 entry points loading successfully. See `deploy/ubuntu/README.md`. CUDA/TensorRT results are not
 claimed from this CPU-only VM.
+
+## Milestone 9: ONNX, TensorRT, CUDA, and Nsight
+
+Install the deployment extra and export both perception models:
+
+```bash
+uv pip install -e '.[deployment]'
+export-onnx --output-dir outputs/milestone9/onnx
+```
+
+The real YOLOv8s and SegFormer-B0 graphs were exported locally, checked with `onnx.checker`, and
+executed through ONNX Runtime on CPU. YOLO input `images` produced `[1, 84, 8400]`; SegFormer input
+`pixel_values` produced `[1, 19, 128, 128]`. This proves graph portability and execution, not NVIDIA
+performance.
+
+On an actual NVIDIA Ubuntu host, `scripts/build_tensorrt_engines.sh` builds batch-1–8 FP16 engines
+with `trtexec`; `scripts/profile_tensorrt.sh` captures warmed CUDA/NVTX/OS-runtime traces with Nsight
+Systems; and `scripts/validate_nvidia.sh` runs the complete fail-fast path. Exact prerequisites,
+commands, evidence requirements, and the free-GPU handoff are in `deploy/nvidia/README.md`.
+
+No CUDA, TensorRT, or Nsight benchmark is reported from the Apple Silicon host or CPU-only Ubuntu
+VM. TensorRT engines and profiles are ignored because they are generated, hardware-specific files.
+After adding the deployment exporter, Ubuntu was revalidated with 39 passing tests and all seven
+CLI entry points.

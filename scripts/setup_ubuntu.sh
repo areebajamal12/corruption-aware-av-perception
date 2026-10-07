@@ -31,6 +31,7 @@ UV_CACHE_DIR="$uv_cache" UV_PYTHON_INSTALL_DIR="$uv_python" \
   --index-url https://download.pytorch.org/whl/cpu \
   --python "$project_root/.venv-linux/bin/python"
 UV_CACHE_DIR="$uv_cache" UV_PYTHON_INSTALL_DIR="$uv_python" \
-  "$uv_bin" pip install -e "$project_root[dev]" --python "$project_root/.venv-linux/bin/python"
+  "$uv_bin" pip install -e "$project_root[dev,deployment]" \
+  --python "$project_root/.venv-linux/bin/python"
 
 echo "Ubuntu environment ready: $project_root/.venv-linux"
