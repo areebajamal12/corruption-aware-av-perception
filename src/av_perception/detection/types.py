@@ -54,6 +54,7 @@ class GroundTruth:
     annotation_token: str
     source_category: str
     visibility: int
+    instance_token: str = ""
 
 
 @dataclass(frozen=True)

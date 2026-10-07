@@ -55,6 +55,7 @@ def project_ground_truth(
                 annotation_token=box.token,
                 source_category=box.name,
                 visibility=visibility,
+                instance_token=str(annotation["instance_token"]),
             )
         )
     return projected

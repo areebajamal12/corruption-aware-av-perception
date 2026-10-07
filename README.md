@@ -258,3 +258,62 @@ benchmark-segmentation \
 
 Each run writes `segmentation_consistency.csv`, `metrics.json`, clean-mask qualitative overlays,
 and `mask_iou_vs_severity.png`.
+
+## Milestone 4: object tracking
+
+Tracking uses the established Ultralytics implementation of **ByteTrack**, fed by the normalized
+YOLOv8s vehicle/pedestrian detections. It is wrapped behind `MultiObjectTracker`, so the association
+backend can be replaced later without changing evaluation or nuScenes loading. The tracker is reset
+at each scene boundary and for every corruption/severity condition. The dependency and inherited
+Ultralytics components are AGPL-3.0 licensed, as noted above.
+
+The primary experiment deliberately uses annotated nuScenes CAM_FRONT keyframes. These are sampled
+at approximately **2 Hz**, so an object can move substantially during the roughly 0.5 seconds
+between evaluated frames. ByteTrack is normally used on much denser video and this sparse sampling
+makes motion prediction and IoU association unusually difficult. The reported values are therefore
+a constrained keyframe experiment and must not be presented as production-rate tracking results.
+nuScenes camera sweeps could provide denser temporal input, but they do not have the same keyframe
+annotation setup; they are excluded from the primary evaluation for now.
+
+Ground-truth identities come directly from nuScenes `instance_token` values. The same visibility
+(`>= 2`), projected-area (`>= 400 px²`), class mapping, detector confidence (`>= 0.25`), and
+class-aware IoU matching threshold (`0.5`) used by detection evaluation apply here. ByteTrack uses
+high/new-track thresholds `0.25`, low threshold `0.1`, match threshold `0.8`, score fusion, and a
+six-keyframe track buffer. Tracking is restarted per scene.
+
+Metrics are defined as follows:
+
+- **IDF1:** a global Hungarian assignment maximizes matched frame observations between nuScenes
+  instance tokens and scene-scoped predicted track IDs. `IDTP` is the assigned overlap count,
+  `IDFN = GT observations - IDTP`, `IDFP = predicted observations - IDTP`, and
+  `IDF1 = 2*IDTP / (2*IDTP + IDFP + IDFN)`.
+- **ID switches:** a ground-truth identity is matched to a different predicted ID than at its
+  previous matched observation.
+- **Fragmentations:** a matched ground-truth identity becomes unmatched for one or more evaluated
+  observations and is later matched again.
+- **Observation retention:** matched filtered GT observations divided by all filtered GT
+  observations. Mean identity retention averages that ratio per nuScenes instance.
+
+Raw switch and fragmentation counts can decrease under severe corruption simply because the
+detector returns too few tracks to switch. Interpret them together with IDF1 and retention, not as
+standalone evidence that severe corruption improves tracking.
+
+```bash
+# Two-scene pilot, followed by all ten mini scenes after validation.
+benchmark-tracking \
+  --dataroot data/nuscenes \
+  --output-dir outputs/milestone4/pilot \
+  --scenes 2 \
+  --device mps \
+  --seed 20261006
+
+benchmark-tracking \
+  --dataroot data/nuscenes \
+  --output-dir outputs/milestone4/full \
+  --device mps \
+  --seed 20261006
+```
+
+Each run writes `tracking_results.csv`, `metrics.json`, representative clean tracking overlays, and
+`tracking_vs_severity.png`. The CSV contains scene/frame, corruption/severity/seed, predicted track
+IDs, nuScenes instance tokens, boxes, IoU, match status, and linked predicted/ground-truth identity.

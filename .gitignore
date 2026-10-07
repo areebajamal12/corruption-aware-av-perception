@@ -19,6 +19,7 @@ outputs/*.json
 outputs/milestone2/
 outputs/milestone56/
 outputs/milestone3/
+outputs/milestone4/
 
 # Downloaded model weights and exports
 *.pt
