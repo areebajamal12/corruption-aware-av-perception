@@ -3,8 +3,7 @@
 A camera-only autonomous-vehicle perception pipeline that detects and tracks road users,
 segments drivable space, and estimates when its own perception is no longer trustworthy.
 
-**Project prompt:** Can I measure when the kind of vision system an autonomous car uses stops
-being trustworthy as camera quality degrades?
+**Project prompt:** Can I measure when an autonomous car’s vision becomes unreliable as the camera quality gets worse?
 
 It stress-tests perception under realistic camera degradation, learns a calibrated runtime
 reliability signal, and carries the same modular models from Apple Silicon development to
