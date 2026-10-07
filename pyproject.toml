@@ -11,6 +11,7 @@ requires-python = ">=3.10,<3.13"
 dependencies = [
   "nuscenes-devkit>=1.1.11,<2",
   "torch>=2.2,<3",
+  "transformers>=4.45,<6",
   "ultralytics>=8.3,<9",
 ]
 
@@ -24,6 +25,7 @@ dev = [
 inspect-nuscenes = "av_perception.data.inspect_nuscenes:main"
 evaluate-detection = "av_perception.detection.pipeline:main"
 benchmark-corruptions = "av_perception.corruption.benchmark:main"
+benchmark-segmentation = "av_perception.segmentation.benchmark:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/av_perception"]

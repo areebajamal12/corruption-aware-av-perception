@@ -216,3 +216,45 @@ benchmark-corruptions \
 Each benchmark writes one `detections.csv` containing clean and corrupted rows with `corruption`,
 `severity`, and per-frame `seed` columns, plus `metrics.json` and `ap_vs_severity.png`. Corrupted
 frames are generated batch-by-batch in memory instead of permanently duplicating the dataset.
+
+## Milestone 3: drivable-area segmentation
+
+**nuScenes has no per-pixel drivable-area labels for camera images, so evaluate segmentation by
+consistency, meaning IoU between each corrupted frame's mask and the clean frame's mask, and say
+clearly in the README that it measures robustness and not accuracy.**
+
+Accordingly, segmentation mask IoU in this project is a self-consistency/robustness measurement.
+It does **not** establish that either the clean or corrupted mask is an accurate representation of
+the road. Qualitative inspection of clean masks is reported separately, without presenting it as
+ground-truth validation.
+
+The implementation uses `nvidia/segformer-b0-finetuned-cityscapes-1024-1024` and extracts the
+Cityscapes `road` class as a drivable-area proxy. The segmenter is wrapped behind
+`Segmenter.segment_batch()`, which accepts paths or in-memory arrays and returns boolean masks at
+the source resolution. This keeps the benchmark independent of PyTorch and permits future ONNX or
+TensorRT backends.
+
+For each frame, the clean predicted mask is the reference. The same frame is then processed under
+all five deterministic corruptions at severities 1–4. The reported metric is binary mask IoU:
+`intersection(clean, corrupted) / union(clean, corrupted)`. Results include per-frame IoU plus
+per-condition mean, median, and 10th-percentile IoU. An empty clean mask and empty corrupted mask
+receive IoU 1.0 because they agree, though clean-mask visualizations should be inspected to catch
+consistently empty or implausible outputs.
+
+```bash
+# Two-scene pilot.
+benchmark-segmentation \
+  --dataroot data/nuscenes \
+  --output-dir outputs/milestone3/pilot \
+  --scenes 2 \
+  --device mps
+
+# Full ten-scene mini dataset.
+benchmark-segmentation \
+  --dataroot data/nuscenes \
+  --output-dir outputs/milestone3/full \
+  --device mps
+```
+
+Each run writes `segmentation_consistency.csv`, `metrics.json`, clean-mask qualitative overlays,
+and `mask_iou_vs_severity.png`.
