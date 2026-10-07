@@ -418,7 +418,7 @@ TensorRT engine creation and CUDA execution are measured facts. Nsight Systems p
 the Kaggle image lacked `nsys`, so the prepared command could not run. Full pipeline profiling,
 representative-frame task-level equivalence after postprocessing, and production GPU deployment
 remain future work. Exact hashes, percentiles, and methodology are stored in
-`deploy/nvidia/kaggle_t4_validation.json`.
+`deploy/cuda/kaggle_t4_validation.json`.
 
 ## Reproduce
 
