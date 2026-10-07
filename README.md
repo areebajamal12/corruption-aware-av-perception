@@ -3,9 +3,33 @@
 A camera-only autonomous-vehicle perception pipeline that detects and tracks road users,
 segments drivable space, and estimates when its own perception is no longer trustworthy.
 
-The project deliberately starts small. Milestone 1 only loads a real nuScenes camera frame,
-projects its annotations, and explains the dataset records involved. CUDA, TensorRT, tracking,
-segmentation, and corruption experiments come later.
+It runs deterministic camera-corruption experiments on nuScenes, learns a calibrated runtime
+reliability signal, and has been validated from Apple MPS development through Ubuntu and real
+FP16 TensorRT execution on an NVIDIA Tesla T4.
+
+## Results at a glance
+
+| Result | Measured value |
+|---|---:|
+| Detection, Apple MPS, 404 frames | 40.03 FPS end-to-end |
+| Reliability, held-out scenes | AUROC 0.709; false-safe rate 0.014 |
+| YOLOv8s TensorRT FP16, Tesla T4 | 3.11 ms mean; 321.17 FPS |
+| SegFormer-B0 TensorRT FP16, Tesla T4 | 3.19 ms mean; 313.58 FPS |
+
+```mermaid
+flowchart LR
+    A[nuScenes CAM_FRONT] --> B[Deterministic corruptions]
+    B --> C[YOLOv8s detection]
+    B --> D[SegFormer road mask]
+    C --> E[ByteTrack]
+    C --> F[Reliability estimator]
+    D --> F
+    E --> F
+    F --> G[Reliable / degraded / unsafe]
+```
+
+TensorRT figures are model-only, batch-1, device-resident timings. They exclude camera decode,
+pre/postprocessing, tracking, and reliability estimation and are not full-pipeline FPS.
 
 ## Milestone 1: inspect nuScenes mini
 
@@ -373,11 +397,11 @@ wheels for non-NVIDIA machines, and the project into `.venv-linux`. The validato
 Linux kernel/distribution, runs Ruff and pytest, and executes `--help` for every project CLI.
 
 This workflow was executed—not merely authored—in a free local Ubuntu 24.04.4 LTS ARM64 Lima VM:
-Linux kernel 6.8.0, Python 3.11.17, 38 passing tests, successful Ruff validation, and all six CLI
+Linux kernel 6.8.0, Python 3.11.17, 39 passing tests, successful Ruff validation, and all seven CLI
 entry points loading successfully. See `deploy/ubuntu/README.md`. CUDA/TensorRT results are not
 claimed from this CPU-only VM.
 
-## Milestone 9: ONNX, TensorRT, CUDA, and Nsight
+## Milestone 9: measured NVIDIA deployment
 
 Install the deployment extra and export both perception models:
 
@@ -386,17 +410,35 @@ uv pip install -e '.[deployment]'
 export-onnx --output-dir outputs/milestone9/onnx
 ```
 
-The real YOLOv8s and SegFormer-B0 graphs were exported locally, checked with `onnx.checker`, and
-executed through ONNX Runtime on CPU. YOLO input `images` produced `[1, 84, 8400]`; SegFormer input
-`pixel_values` produced `[1, 19, 128, 128]`. This proves graph portability and execution, not NVIDIA
-performance.
+The real YOLOv8s and SegFormer-B0 graphs were exported, checked with `onnx.checker`, and executed
+through ONNX Runtime. YOLO input `images` produces `[1, 84, 8400]`; SegFormer input `pixel_values`
+produces `[1, 19, 128, 128]`.
 
-On an actual NVIDIA Ubuntu host, `scripts/build_tensorrt_engines.sh` builds batch-1–8 FP16 engines
-with `trtexec`; `scripts/profile_tensorrt.sh` captures warmed CUDA/NVTX/OS-runtime traces with Nsight
-Systems; and `scripts/validate_nvidia.sh` runs the complete fail-fast path. Exact prerequisites,
-commands, evidence requirements, and the free-GPU handoff are in `deploy/nvidia/README.md`.
+Final validation used one of two free Kaggle Tesla T4 GPUs (`CUDA_VISIBLE_DEVICES=0`). The installed
+toolkit was CUDA 12.8 (`nvcc V12.8.93`); CUDA 13.0 from `nvidia-smi` is the driver's compatibility
+level, not the installed toolkit. The run used driver 580.178.04, PyTorch 2.11.0+cu128, cuDNN
+9.19, TensorRT 10.13.3.9, and ONNX Runtime GPU 1.22.0.
 
-No CUDA, TensorRT, or Nsight benchmark is reported from the Apple Silicon host or CPU-only Ubuntu
-VM. TensorRT engines and profiles are ignored because they are generated, hardware-specific files.
-After adding the deployment exporter, Ubuntu was revalidated with 39 passing tests and all seven
-CLI entry points.
+Both models built as real FP16 TensorRT engines with dynamic batch profiles 1–8. TensorRT timings
+use batch 1, seeded FP32 input, 50 warm-up iterations, and 200 synchronized measured iterations
+with device-resident I/O. ONNX Runtime uses 20 warm-up and 100 measured `session.run` calls and
+includes host/device transfers; its zero-copy I/O binding path aborted in Kaggle, so these backend
+timings are informative but not perfectly equivalent.
+
+| Model | Backend | Precision | Input | Mean | p95 | Throughput |
+|---|---|---|---|---:|---:|---:|
+| YOLOv8s | TensorRT | FP16 | 1×3×640×640 | 3.114 ms | 3.180 ms | 321.17 FPS |
+| YOLOv8s | ONNX Runtime CUDA | FP32 | 1×3×640×640 | 12.091 ms | 12.305 ms | 82.71 FPS |
+| SegFormer-B0 | TensorRT | FP16 | 1×3×512×512 | 3.189 ms | 3.234 ms | 313.58 FPS |
+| SegFormer-B0 | ONNX Runtime CUDA | FP32 | 1×3×512×512 | 13.622 ms | 13.896 ms | 73.41 FPS |
+
+FP16 TensorRT closely matched FP32 ONNX Runtime CUDA on identical inputs: relative L2 error was
+`7.57e-4` for YOLOv8s and `1.70e-3` for SegFormer, with cosine similarity above `0.999999` for
+both. YOLO's largest absolute raw-output difference was 5.97 because its output contains
+pixel-scale box coordinates; mean absolute difference was 0.00605.
+
+TensorRT engine creation and CUDA execution are measured facts. Nsight Systems profiling is not:
+the Kaggle image lacked `nsys`, so the prepared command could not run. Full pipeline profiling,
+representative-frame task-level equivalence after postprocessing, and production GPU deployment
+remain future work. Exact hashes, percentiles, and methodology are stored in
+`deploy/nvidia/kaggle_t4_validation.json`.
