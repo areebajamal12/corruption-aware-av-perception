@@ -1,0 +1,25 @@
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+work/
+
+# Datasets and generated artifacts
+data/
+outputs/*.png
+outputs/*.jpg
+outputs/*.json
+outputs/milestone2/
+outputs/milestone56/
+
+# Downloaded model weights and exports
+*.pt
+*.onnx
+*.engine

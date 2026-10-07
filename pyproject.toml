@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "corruption-aware-av-perception"
+version = "0.1.0"
+description = "Camera perception reliability under realistic visual corruption"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "nuscenes-devkit>=1.1.11,<2",
+  "torch>=2.2,<3",
+  "ultralytics>=8.3,<9",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<9",
+  "ruff>=0.7,<1",
+]
+
+[project.scripts]
+inspect-nuscenes = "av_perception.data.inspect_nuscenes:main"
+evaluate-detection = "av_perception.detection.pipeline:main"
+benchmark-corruptions = "av_perception.corruption.benchmark:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/av_perception"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
