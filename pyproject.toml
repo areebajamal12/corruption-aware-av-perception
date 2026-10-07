@@ -11,6 +11,7 @@ requires-python = ">=3.10,<3.13"
 dependencies = [
   "lap>=0.5.12,<1",
   "nuscenes-devkit>=1.1.11,<2",
+  "scikit-learn>=1.5,<2",
   "torch>=2.2,<3",
   "transformers>=4.45,<6",
   "ultralytics>=8.3,<9",
@@ -28,6 +29,7 @@ evaluate-detection = "av_perception.detection.pipeline:main"
 benchmark-corruptions = "av_perception.corruption.benchmark:main"
 benchmark-segmentation = "av_perception.segmentation.benchmark:main"
 benchmark-tracking = "av_perception.tracking.benchmark:main"
+evaluate-reliability = "av_perception.reliability.experiment:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/av_perception"]

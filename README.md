@@ -317,3 +317,43 @@ benchmark-tracking \
 Each run writes `tracking_results.csv`, `metrics.json`, representative clean tracking overlays, and
 `tracking_vs_severity.png`. The CSV contains scene/frame, corruption/severity/seed, predicted track
 IDs, nuScenes instance tokens, boxes, IoU, match status, and linked predicted/ground-truth identity.
+
+## Milestone 7: runtime perception reliability
+
+The runtime estimator returns a calibrated probability that the current perception output is
+acceptable, then maps it to `reliable` (`score >= 0.8`), `degraded` (`0.5 <= score < 0.8`), or
+`unsafe` (`score < 0.5`). It is a class-balanced logistic model with held-out isotonic calibration
+and a conservative training-distribution guard that prevents clearly out-of-distribution feature
+vectors from being labeled reliable.
+
+Runtime inputs are limited to signals available without ground truth: brightness/contrast/dark and
+bright pixel fractions, sharpness, edge density, saturation, detection counts/confidences, class
+counts, predicted road fraction, track counts/confidence, and track-ID continuity. Corruption name,
+severity, GT matches, segmentation consistency against a clean frame, and nuScenes identities are
+**not** model inputs.
+
+Offline supervision defines per-frame perception quality as
+`0.45 * detection F1 + 0.25 * segmentation consistency + 0.30 * tracking recall`; quality `>= 0.6`
+is acceptable. This label supports the controlled corruption study but inherits the segmentation
+self-consistency limitation described above and is not a real-world safety certification.
+
+Scenes are kept disjoint: six train scenes, one calibration scene, and three test scenes. In
+addition to the all-corruption held-out-scene test, each corruption family is excluded completely
+from training/calibration and evaluated on that family in held-out scenes. Reported metrics are
+AUROC, precision-recall average precision, Brier score, expected calibration error (10 bins), and
+false-safe rate (the fraction of unacceptable examples assigned the `reliable` state).
+
+```bash
+evaluate-reliability \
+  --detection-csv outputs/milestone56/full/detections.csv \
+  --segmentation-csv outputs/milestone3/full/segmentation_consistency.csv \
+  --tracking-csv outputs/milestone4/full/tracking_results.csv \
+  --output-dir outputs/milestone7/full
+```
+
+The full experiment contains 8,484 examples. On held-out scenes it achieved AUROC `0.709`,
+precision-recall AP `0.280`, Brier score `0.192`, ECE `0.205`, and false-safe rate `0.014`.
+Leave-one-corruption-out results are substantially weaker. In particular, unseen fog produced a
+false-safe rate of `0.507`; unseen noise was caught by the distribution guard but had AUROC `0.514`.
+These are reported as limitations, not hidden: broader training corruption coverage and better
+uncertainty modeling are required before treating the score as a safety mechanism.

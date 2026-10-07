@@ -20,6 +20,7 @@ outputs/milestone2/
 outputs/milestone56/
 outputs/milestone3/
 outputs/milestone4/
+outputs/milestone7/
 
 # Downloaded model weights and exports
 *.pt
