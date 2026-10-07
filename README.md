@@ -7,6 +7,20 @@ It stress-tests perception under realistic camera degradation, learns a calibrat
 reliability signal, and carries the same modular models from Apple Silicon development to
 hardware-accelerated Linux inference.
 
+![Clean and severity-4 noise perception demo](assets/demo_noise_s4.gif)
+
+The demo compares clean `CAM_FRONT` input with deterministic severity-4 noise. Both sides run
+the real YOLOv8s detector, ByteTrack identities, SegFormer drivable-area mask, and calibrated
+reliability estimator. The displayed state is not curated: occasional counterintuitive labels
+are retained because reliability generalization—especially to unseen conditions—is a documented
+limitation rather than something the visualization should hide.
+
+Recreate it with another existing corruption by changing one flag:
+
+```bash
+render-demo --corruption fog  # fog, low_light, blur, noise, or partial_occlusion
+```
+
 ## Results at a glance
 
 | Result | Measured value |

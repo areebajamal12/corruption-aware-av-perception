@@ -36,6 +36,7 @@ benchmark-segmentation = "av_perception.segmentation.benchmark:main"
 benchmark-tracking = "av_perception.tracking.benchmark:main"
 evaluate-reliability = "av_perception.reliability.experiment:main"
 export-onnx = "av_perception.deployment.export_onnx:main"
+render-demo = "av_perception.demo:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/av_perception"]
