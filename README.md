@@ -3,9 +3,9 @@
 A camera-only autonomous-vehicle perception pipeline that detects and tracks road users,
 segments drivable space, and estimates when its own perception is no longer trustworthy.
 
-It runs deterministic camera-corruption experiments on nuScenes, learns a calibrated runtime
-reliability signal, and has been validated from Apple MPS development through Ubuntu and real
-FP16 TensorRT execution on an NVIDIA Tesla T4.
+It stress-tests perception under realistic camera degradation, learns a calibrated runtime
+reliability signal, and carries the same modular models from Apple Silicon development to
+hardware-accelerated Linux inference.
 
 ## Results at a glance
 
@@ -30,6 +30,21 @@ flowchart LR
 
 TensorRT figures are model-only, batch-1, device-resident timings. They exclude camera decode,
 pre/postprocessing, tracking, and reliability estimation and are not full-pipeline FPS.
+
+## Technology stack
+
+| Area | Technologies used |
+|---|---|
+| Core ML | Python 3.11, PyTorch, TorchVision, Ultralytics YOLOv8s |
+| Perception | OpenCV, SegFormer-B0, ByteTrack, Hugging Face Transformers |
+| Data and evaluation | nuScenes devkit, NumPy, pandas, scikit-learn, SciPy |
+| Portability | ONNX, ONNX Runtime, modular detector/segmenter/tracker interfaces |
+| Acceleration | Apple Metal/MPS, CUDA 12.8, TensorRT FP16 |
+| Platforms | macOS on Apple Silicon, Ubuntu 24.04, Kaggle Linux GPU runtime |
+| Quality | pytest, Ruff, deterministic seeded benchmarks, Git/GitHub |
+
+The implementation is primarily Python with reproducible shell tooling. C++17, ROS, LiDAR,
+radar, SLAM, mapping, and sensor fusion are intentionally outside this project's scope.
 
 ## Milestone 1: inspect nuScenes mini
 
@@ -401,7 +416,7 @@ Linux kernel 6.8.0, Python 3.11.17, 39 passing tests, successful Ruff validation
 entry points loading successfully. See `deploy/ubuntu/README.md`. CUDA/TensorRT results are not
 claimed from this CPU-only VM.
 
-## Milestone 9: measured NVIDIA deployment
+## Milestone 9: hardware-accelerated deployment
 
 Install the deployment extra and export both perception models:
 
