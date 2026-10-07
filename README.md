@@ -357,3 +357,22 @@ Leave-one-corruption-out results are substantially weaker. In particular, unseen
 false-safe rate of `0.507`; unseen noise was caught by the distribution guard but had AUROC `0.514`.
 These are reported as limitations, not hidden: broader training corruption coverage and better
 uncertainty modeling are required before treating the score as a safety mechanism.
+
+## Milestone 8: reproducible Ubuntu environment
+
+Ubuntu setup is automated separately from macOS so platform-specific virtual environments cannot
+overwrite each other:
+
+```bash
+./scripts/setup_ubuntu.sh
+./scripts/validate_ubuntu.sh
+```
+
+The setup installs required apt packages, Linux-native `uv`, Python 3.11, official CPU-only PyTorch
+wheels for non-NVIDIA machines, and the project into `.venv-linux`. The validator checks the actual
+Linux kernel/distribution, runs Ruff and pytest, and executes `--help` for every project CLI.
+
+This workflow was executed—not merely authored—in a free local Ubuntu 24.04.4 LTS ARM64 Lima VM:
+Linux kernel 6.8.0, Python 3.11.17, 38 passing tests, successful Ruff validation, and all six CLI
+entry points loading successfully. See `deploy/ubuntu/README.md`. CUDA/TensorRT results are not
+claimed from this CPU-only VM.
