@@ -3,6 +3,17 @@
 No NVIDIA execution result is claimed in this repository unless it was produced on an actual
 NVIDIA GPU. The local Apple Silicon host and Ubuntu ARM64 VM cannot validate CUDA or TensorRT.
 
+## Validated free-GPU result
+
+The final path was executed on one free Kaggle Tesla T4 with TensorRT 10.13.3.9 and the actual
+CUDA 12.8 toolkit. Both FP16 engines built and ran successfully. Batch-1 device-resident mean
+latency was 3.114 ms for YOLOv8s and 3.189 ms for SegFormer-B0 after 50 warm-up iterations across
+200 measured iterations. See `kaggle_t4_validation.json` for exact versions, hashes, percentiles,
+ONNX Runtime CUDA comparison, and numerical-consistency metrics.
+
+Kaggle did not contain `trtexec` or `nsys`; engine creation and execution therefore used the
+TensorRT Python API. Nsight profiling remains explicitly unmeasured.
+
 ## 1. Export and validate ONNX anywhere
 
 ```bash
