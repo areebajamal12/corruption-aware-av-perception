@@ -16,6 +16,19 @@ hardware-accelerated Linux inference.
 | YOLOv8s TensorRT FP16, Tesla T4 | 3.11 ms mean; 321.17 FPS |
 | SegFormer-B0 TensorRT FP16, Tesla T4 | 3.19 ms mean; 313.58 FPS |
 
+![Detection AP versus corruption severity](docs/assets/ap_vs_severity.png)
+
+AP@0.5 falls under every severity-4 corruption, with noise and partial occlusion causing the
+largest degradation. Values are the mean of vehicle and pedestrian AP over all 404 mini frames.
+
+| Corruption | Clean mAP | Severity-4 mAP | Change |
+|---|---:|---:|---:|
+| Fog | 0.399 | 0.337 | −15.5% |
+| Low light | 0.399 | 0.254 | −36.3% |
+| Blur | 0.399 | 0.332 | −16.9% |
+| Noise | 0.399 | 0.182 | −54.3% |
+| Partial occlusion | 0.399 | 0.155 | −61.2% |
+
 ```mermaid
 flowchart LR
     A[nuScenes CAM_FRONT] --> B[Deterministic corruptions]
@@ -48,56 +61,9 @@ radar, SLAM, mapping, and sensor fusion are intentionally outside this project's
 
 ## Milestone 1: inspect nuScenes mini
 
-### 1. Create the environment
-
-On an Apple Silicon Mac, run the bootstrap script. It installs `uv`, Python 3.11, and all
-dependencies locally inside this project; it does not require Homebrew or modify shell profiles.
-
-```bash
-sh scripts/bootstrap_macos.sh
-source .venv/bin/activate
-python --version
-pytest -q
-```
-
-### 2. Download nuScenes mini
-
-Create a nuScenes account, download the **v1.0-mini** archive, and extract it locally. The
-directory supplied to `--dataroot` must contain both `samples/` and `v1.0-mini/`:
-
-```text
-data/nuscenes/
-├── maps/
-├── samples/
-├── sweeps/
-└── v1.0-mini/
-```
-
-The dataset is ignored by Git. A symlink at `data/nuscenes` is also fine if the files live on
-an external drive.
-
-### 3. Inspect a front-camera sample
-
-```bash
-inspect-nuscenes \
-  --dataroot data/nuscenes \
-  --output outputs/nuscenes_cam_front.png
-```
-
-The command uses the first sample by default, prints the scene/sample/sample-data relationships,
-and writes an annotated image. Useful options:
-
-```bash
-# Inspect a specific sample and show every projected annotation.
-inspect-nuscenes --dataroot data/nuscenes \
-  --sample-token <TOKEN> --all-annotations
-
-# Inspect another camera and open an interactive window as well as saving the image.
-inspect-nuscenes --dataroot data/nuscenes \
-  --channel CAM_FRONT_LEFT --show
-```
-
-Run `inspect-nuscenes --help` for all options.
+The dataset inspector loads a real nuScenes `CAM_FRONT` keyframe, projects its 3D annotations into
+the calibrated camera image, and reports the scene/sample/sample-data relationships. Setup,
+download, and inspector commands are collected in [Reproduce](#reproduce).
 
 ## Dataset vocabulary
 
@@ -258,14 +224,10 @@ frames are generated batch-by-batch in memory instead of permanently duplicating
 
 ## Milestone 3: drivable-area segmentation
 
-**nuScenes has no per-pixel drivable-area labels for camera images, so evaluate segmentation by
-consistency, meaning IoU between each corrupted frame's mask and the clean frame's mask, and say
-clearly in the README that it measures robustness and not accuracy.**
-
-Accordingly, segmentation mask IoU in this project is a self-consistency/robustness measurement.
-It does **not** establish that either the clean or corrupted mask is an accurate representation of
-the road. Qualitative inspection of clean masks is reported separately, without presenting it as
-ground-truth validation.
+nuScenes does not provide per-pixel drivable-area labels for camera images. Segmentation IoU here
+therefore measures consistency between each corrupted frame's predicted mask and the clean frame's
+predicted mask. It measures robustness under corruption, not segmentation accuracy. Qualitative
+inspection of clean masks is reported separately and is not presented as ground-truth validation.
 
 The implementation uses `nvidia/segformer-b0-finetuned-cityscapes-1024-1024` and extracts the
 Cityscapes `road` class as a drivable-area proxy. The segmenter is wrapped behind
@@ -457,3 +419,47 @@ the Kaggle image lacked `nsys`, so the prepared command could not run. Full pipe
 representative-frame task-level equivalence after postprocessing, and production GPU deployment
 remain future work. Exact hashes, percentiles, and methodology are stored in
 `deploy/nvidia/kaggle_t4_validation.json`.
+
+## Reproduce
+
+### macOS environment
+
+On Apple Silicon, the bootstrap script installs `uv`, Python 3.11, and project dependencies into
+the local `.venv`; it does not require Homebrew or modify shell profiles.
+
+```bash
+sh scripts/bootstrap_macos.sh
+source .venv/bin/activate
+python --version
+pytest -q
+```
+
+### nuScenes mini
+
+Create a nuScenes account, download **v1.0-mini**, and extract it so the supplied `--dataroot`
+contains both `samples/` and `v1.0-mini/`:
+
+```text
+data/nuscenes/
+├── maps/
+├── samples/
+├── sweeps/
+└── v1.0-mini/
+```
+
+The dataset and archives are ignored by Git. A `data/nuscenes` symlink is also supported.
+
+### Inspect and validate
+
+```bash
+inspect-nuscenes \
+  --dataroot data/nuscenes \
+  --output outputs/nuscenes_cam_front.png
+
+pytest -q
+ruff check .
+```
+
+The inspector uses the first sample by default. Use `--sample-token <TOKEN>`, `--channel`,
+`--all-annotations`, or `--show` for targeted and interactive inspection. Each milestone section
+above includes its corresponding pilot and full-dataset commands.
